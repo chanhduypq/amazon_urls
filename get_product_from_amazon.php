@@ -54,7 +54,9 @@ class Products {
         $url = 'https://www.amazon.com/Best-Sellers-Books-Childrens/zgbs/books/4/ref=zg_bs_unv_b_2_3371_1';
         $links= $this->getAllFirstChildrenLinks($url);
         foreach ($links as $link){
+            //get page 1
             $this->getProducts($link);
+            //get page 2,3,4,5
             $linkPagings= $this->getPagingLinks($link);
             foreach ($linkPagings as $linkPaging){
                 $this->getProducts($linkPaging);
@@ -63,7 +65,7 @@ class Products {
 
         // create csv
         $file = fopen("products.csv", "w");
-        fputcsv($file, array('id', 'url', 'name','rating','customer_reviews','price','price_type','image','prime','release_date'));
+        fputcsv($file, array('id', 'url', 'name','rating','customer_reviews','price','price_type','image','prime','release_date','author'));
         foreach ($this->allData as $k => $row) {
             $row = array_map("utf8_decode", $row);
             fputcsv($file, $row);
@@ -101,13 +103,15 @@ class Products {
             
             $nodeTypePrice=$div->find('span.a-size-small');
             if(is_array($nodeTypePrice)&&count($nodeTypePrice)>0){
-                $typePrice=$nodeTypePrice[0]->plaintext;
+                if ($nodeTypePrice[0]->class == 'a-size-small a-color-base') {
+                    $typePrice = $nodeTypePrice[1]->plaintext;
+                } else {
+                    $typePrice = $nodeTypePrice[0]->plaintext;
+                }
             }
             else{
                 $typePrice='';
             }
-            
-            
 
             $id = $div->find('div.a-section')[0]->attr['data-p13n-asin-metadata'];
             $temp = explode('asin', $id);
@@ -131,6 +135,7 @@ class Products {
             $data['image'] = $image;
             $data['prime'] = (is_array($div->find('i.a-icon-prime'))&&count($div->find('i.a-icon-prime'))>0)?'true':'false';
             $data['release_date']=$release_date;
+            $data['author']=$div->find('div.p13n-sc-truncated-hyphen')[0]->parent()->next_sibling()->find('.a-size-small')[0]->plaintext;
             $this->allData[$data['id']] = $data;
 
         }
